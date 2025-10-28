@@ -11,6 +11,7 @@ import javax.swing.*;
 import java.io.File;
 import java.awt.*;
 
+
 public class HomeUI extends javax.swing.JFrame {
     
    private static final java.util.logging.Logger logger =
@@ -18,7 +19,7 @@ public class HomeUI extends javax.swing.JFrame {
    private Image backgroundImage;
    private Font pixelFont;
 
-// Shining sun
+   // Shining sun
    private float sunAlpha = 1.0f; 
    private boolean fadingOut = true; 
    private Timer sunTimer; 
@@ -29,13 +30,21 @@ public class HomeUI extends javax.swing.JFrame {
    private boolean[] moveRight = {true, true, true, false, false};
    private Timer cloudTimer;
 
-// title variables
+   // title variables
    private Timer titleFloatTimer;
    private int titleBaseY = 225; 
    private int titleOffset = 0;
    private boolean movingUp = true;
    private JLabel titleLabel;
    private JLabel shadowLabel;
+   
+   private boolean isMuted = false;
+   private Rectangle soundIconBounds = new Rectangle(20, 620, 50, 50); 
+   
+ 
+
+
+
 
     /**
      * Creates new form homeui
@@ -50,15 +59,16 @@ public class HomeUI extends javax.swing.JFrame {
             logger.warning("Background image not found: /images/home_bg.png");
         }
 
-        // custom background panel
+       
         setContentPane(new BackgroundPanel());
         initComponents();
+        
         
         try {
         pixelFont = Font.createFont(
             Font.TRUETYPE_FONT,
             new File("src/main/resources/fonts/PressStart2P.ttf")
-        ).deriveFont(20f); // base size for buttons, can tweak
+        ).deriveFont(20f); 
         GraphicsEnvironment ge = GraphicsEnvironment.getLocalGraphicsEnvironment();
         ge.registerFont(pixelFont);
     } catch (Exception e) {
@@ -80,7 +90,7 @@ public class HomeUI extends javax.swing.JFrame {
     playButton.setBackground(new Color(0, 180, 0)); 
     playButton.setFocusPainted(false);
     playButton.setBorder(BorderFactory.createLineBorder(new Color(0, 120, 0), 4));
-    playButton.setBounds(350, 405, 300, 50); // x,y,width,height
+    playButton.setBounds(350, 405, 300, 50); 
 
     
    RoundedButton exitButton = new RoundedButton("EXIT", 20);
@@ -142,13 +152,13 @@ public class HomeUI extends javax.swing.JFrame {
     jPanel1.setComponentZOrder(playButton, 0);
     jPanel1.setComponentZOrder(exitButton, 0);
         
-    
+ 
         
     titleLabel = new JLabel("FLAPPY FACE", SwingConstants.CENTER);
-    titleLabel.setForeground(new Color(255, 215, 0)); // yellow
+    titleLabel.setForeground(new Color(255, 215, 0)); 
 
 try {
-    // Load custom pixel font
+    
     Font pixelFont = Font.createFont(
             Font.TRUETYPE_FONT,
             new File("src/main/resources/fonts/PressStart2P.ttf")
@@ -161,7 +171,7 @@ try {
 }
 
 
-    titleLabel.setBounds(0, 225, 1000, 80); // (x, y, width, height)
+    titleLabel.setBounds(0, 225, 1000, 80); 
     titleLabel.setHorizontalAlignment(SwingConstants.CENTER);
 
 
@@ -170,9 +180,9 @@ try {
 
         
     shadowLabel = new JLabel("FLAPPY FACE", SwingConstants.CENTER);
-    shadowLabel.setForeground(new Color(240, 128, 0)); // orange shadow
+    shadowLabel.setForeground(new Color(240, 128, 0)); 
     shadowLabel.setFont(titleLabel.getFont());
-    shadowLabel.setBounds(4, 230, 1000, 80); // slight offset for shadow
+    shadowLabel.setBounds(4, 230, 1000, 80);
 
     jPanel1.add(shadowLabel);
     jPanel1.setComponentZOrder(shadowLabel, 1);
@@ -238,7 +248,7 @@ try {
     repaint();
 }
 
-//animation for title
+   //animation for title
    private void animateTitle() {
         int amplitude = 10; 
         if (movingUp) {
@@ -262,10 +272,13 @@ try {
     
  private class BackgroundPanel extends JPanel {
   
-@Override
-protected void paintComponent(Graphics g) {
+ @Override
+ protected void paintComponent(Graphics g) {
     super.paintComponent(g);
     Graphics2D g2d = (Graphics2D) g;
+    
+    // 🎧 Draw sound icon
+    
 
    
     g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
@@ -285,12 +298,12 @@ protected void paintComponent(Graphics g) {
   g2d.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, sunAlpha));
 
   
-RadialGradientPaint glow = new RadialGradientPaint(
+ RadialGradientPaint glow = new RadialGradientPaint(
     new Point(sunX + sunSize / 2, sunY + sunSize / 2),
     sunSize,
     new float[]{0f, 1f},
     new Color[]{new Color(255, 255, 150, 180), new Color(255, 255, 150, 0)}
-);
+ );
 
     g2d.setPaint(glow);
     g2d.fillOval(sunX - 20, sunY - 20, sunSize + 40, sunSize + 40);
@@ -299,22 +312,22 @@ RadialGradientPaint glow = new RadialGradientPaint(
     GradientPaint gradient = new GradientPaint(
     sunX, sunY, new Color(255, 255, 180),
     sunX + sunSize, sunY + sunSize, new Color(255, 204, 0)
-);
+ );
 
     g2d.setPaint(gradient);
     g2d.fillOval(sunX, sunY, sunSize, sunSize);
 
 
-g2d.setComposite(oldComposite);
-g2d.setPaint(oldPaint);
+    g2d.setComposite(oldComposite);
+    g2d.setPaint(oldPaint);
 
    
     for (int i = 0; i < cloudX.length; i++) {
         int size = 80 + (i * 12); 
         drawCloud(g2d, cloudX[i], cloudY[i], size);
     }
-}
-private void drawCloud(Graphics2D g2d, int x, int y, int size) {
+ }
+    private void drawCloud(Graphics2D g2d, int x, int y, int size) {
     
     Paint oldPaint = g2d.getPaint();
     Stroke oldStroke = g2d.getStroke();
@@ -343,7 +356,9 @@ private void drawCloud(Graphics2D g2d, int x, int y, int size) {
     g2d.setPaint(oldPaint);
     g2d.setStroke(oldStroke);
     
+    
 }
+   
 
      }
         
