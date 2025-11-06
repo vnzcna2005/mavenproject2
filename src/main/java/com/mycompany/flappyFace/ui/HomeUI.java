@@ -8,8 +8,13 @@ package com.mycompany.flappyFace.ui;
  * @author VNZ
  */
 import javax.swing.*;
-import java.io.File;
 import java.awt.*;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
+import javax.sound.sampled.*;
+import java.io.File;
+import java.io.IOException;
+ 
 
 
 public class HomeUI extends javax.swing.JFrame {
@@ -38,11 +43,10 @@ public class HomeUI extends javax.swing.JFrame {
    private JLabel titleLabel;
    private JLabel shadowLabel;
    
+   private JLabel audioLabel;
    private boolean isMuted = false;
-   private Rectangle soundIconBounds = new Rectangle(20, 620, 50, 50); 
-   
- 
-
+   private Clip clip;
+  
 
 
 
@@ -125,9 +129,14 @@ public class HomeUI extends javax.swing.JFrame {
        
         System.out.println("Play pressed");
     });
+    
     exitButton.addActionListener(ev -> {
-        System.exit(0);
-    });
+    if (clip != null && clip.isOpen()) {
+        clip.close(); 
+    }
+    System.exit(0); 
+  });
+
 
    
     JLabel playShadow = new JLabel("PLAY", SwingConstants.CENTER);
@@ -152,7 +161,49 @@ public class HomeUI extends javax.swing.JFrame {
     jPanel1.setComponentZOrder(playButton, 0);
     jPanel1.setComponentZOrder(exitButton, 0);
         
- 
+    audioLabel = new JLabel("🔊");  
+    audioLabel.setFont(new Font("Segoe UI Emoji", Font.PLAIN, 24));
+    audioLabel.setForeground(Color.GRAY); 
+    audioLabel.setBounds(20, getHeight() - 80, 50, 50);
+    audioLabel.setCursor(new Cursor(Cursor.HAND_CURSOR));
+    
+    
+        audioLabel.addMouseListener(new MouseAdapter() {
+            @Override
+    public void mouseClicked(MouseEvent e) {
+        isMuted = !isMuted;  // flip state
+        if (isMuted) {
+            audioLabel.setText("🔇");
+            if (clip != null && clip.isRunning()) {
+                clip.stop(); // mute 
+            }
+        } else {
+            audioLabel.setText("🔊");
+            if (clip != null) {
+                clip.start(); // unmute 
+            }
+        }
+    }
+        });
+        
+    
+     jPanel1.add(audioLabel);
+
+   
+    audioLabel.setBounds(20, 620, 50, 50); 
+
+
+    jPanel1.setComponentZOrder(audioLabel, 0);
+
+    // refresh the UI
+    jPanel1.revalidate();
+    jPanel1.repaint();
+
+    // Load your background music
+    loadAndPlayBackgroundMusicFromResources();
+
+
+
         
     titleLabel = new JLabel("FLAPPY FACE", SwingConstants.CENTER);
     titleLabel.setForeground(new Color(255, 215, 0)); 
@@ -213,12 +264,21 @@ try {
         titleFloatTimer = new Timer(60, e -> animateTitle());
         titleFloatTimer.start();
 
-
+       
+       addWindowListener(new java.awt.event.WindowAdapter() {
+       @Override
+       public void windowClosing(java.awt.event.WindowEvent e) {
+        if (clip != null && clip.isOpen()) {
+            clip.close();
+         }
+       }
+     });
+      //-----------------End of the constructor--------------------------
     }
     
      
    
-    //Animation for sun
+    // sun
     private void animateSun() {
         if (fadingOut) {
             sunAlpha -= 0.01f;
@@ -230,7 +290,7 @@ try {
         repaint();
     }
     
-    // ☁️ Move clouds 
+    // ️ clouds 
     private void animateClouds() {
       for (int i = 0; i < cloudX.length; i++) {
         if (moveRight[i]) {
@@ -248,7 +308,7 @@ try {
     repaint();
 }
 
-   //animation for title
+   // title
    private void animateTitle() {
         int amplitude = 10; 
         if (movingUp) {
@@ -264,6 +324,55 @@ try {
     shadowLabel.setBounds(4, titleBaseY + 5 + titleOffset, 1000, 80);
     jPanel1.repaint();
 }
+   
+  
+   private void loadAndPlayBackgroundMusicFromResources() {
+    try {
+        
+        java.net.URL audioUrl = getClass().getResource("/sounds/bg_music.wav");
+        if (audioUrl == null) {
+            System.err.println("Audio resource not found: /sounds/bg_music.wav");
+            return;
+        }
+
+       
+        AudioInputStream ais = AudioSystem.getAudioInputStream(audioUrl);
+
+     
+        AudioFormat baseFormat = ais.getFormat();
+        AudioFormat decodedFormat = new AudioFormat(
+                AudioFormat.Encoding.PCM_SIGNED,
+                baseFormat.getSampleRate(),
+                16,
+                baseFormat.getChannels(),
+                baseFormat.getChannels() * 2,
+                baseFormat.getSampleRate(),
+                false);
+
+        AudioInputStream dais = AudioSystem.getAudioInputStream(decodedFormat, ais);
+
+        clip = AudioSystem.getClip();
+        clip.open(dais);
+        clip.loop(Clip.LOOP_CONTINUOUSLY);
+        clip.start();
+
+       
+        dais.close();
+        ais.close();
+    } catch (UnsupportedAudioFileException uafe) {
+        uafe.printStackTrace();
+        System.err.println("Unsupported audio format. Ensure bg_music.wav is uncompressed PCM WAV.");
+    } catch (LineUnavailableException lue) {
+        lue.printStackTrace();
+        System.err.println("Audio line unavailable.");
+    } catch (IOException ioe) {
+        ioe.printStackTrace();
+        System.err.println("IO error loading audio.");
+    } catch (Exception ex) {
+        ex.printStackTrace();
+    }
+}
+
 
 
     
@@ -277,7 +386,7 @@ try {
     super.paintComponent(g);
     Graphics2D g2d = (Graphics2D) g;
     
-    // 🎧 Draw sound icon
+ 
     
 
    
@@ -326,6 +435,9 @@ try {
         int size = 80 + (i * 12); 
         drawCloud(g2d, cloudX[i], cloudY[i], size);
     }
+    
+
+
  }
     private void drawCloud(Graphics2D g2d, int x, int y, int size) {
     
