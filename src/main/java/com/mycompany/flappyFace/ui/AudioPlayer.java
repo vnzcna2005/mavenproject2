@@ -8,12 +8,11 @@ package com.mycompany.flappyFace.ui;
  *
  * @author VNZ
  */
-
-
 import javax.sound.sampled.*;
 import java.io.File;
 
 public class AudioPlayer {
+
     private Clip clip;
     private String filepath;
 
@@ -23,7 +22,9 @@ public class AudioPlayer {
 
     public void play() {
         try {
-            if (clip != null && clip.isRunning()) return; // already playing
+            if (clip != null && clip.isRunning()) {
+                return; // already playing
+            }
             AudioInputStream audioStream = AudioSystem.getAudioInputStream(new File(filepath));
             clip = AudioSystem.getClip();
             clip.open(audioStream);
@@ -41,4 +42,3 @@ public class AudioPlayer {
         }
     }
 }
-
