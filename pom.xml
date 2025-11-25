@@ -1,13 +1,64 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" 
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 
+                             https://maven.apache.org/xsd/maven-4.0.0.xsd">
+
     <modelVersion>4.0.0</modelVersion>
+
     <groupId>com.mycompany</groupId>
     <artifactId>mavenproject2</artifactId>
     <version>1.0-SNAPSHOT</version>
     <packaging>jar</packaging>
+
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <maven.compiler.release>24</maven.compiler.release>
-        <exec.mainClass>com.mycompany.mavenproject2.FlappyFaceMain</exec.mainClass>
+        <!-- Use a stable Java version -->
+        <maven.compiler.source>17</maven.compiler.source>
+        <maven.compiler.target>17</maven.compiler.target>
+
+        <!-- Your main class -->
+        <exec.mainClass>com.mycompany.flappyFace.ui.HomeUI</exec.mainClass>
+        
+        <!-- Memory settings -->
+        <exec.vmArgs>-Xms128m -Xmx512m -XX:-UseG1GC --enable-native-access=ALL-UNNAMED</exec.vmArgs>
     </properties>
+
+    <build>
+        <plugins>
+
+            <!-- Compiler plugin -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.11.0</version>
+                <configuration>
+                    <source>${maven.compiler.source}</source>
+                    <target>${maven.compiler.target}</target>
+                </configuration>
+            </plugin>
+
+            <!-- Exec plugin for running your Java app -->
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>exec-maven-plugin</artifactId>
+                <version>3.1.0</version>
+                <configuration>
+                    <mainClass>${exec.mainClass}</mainClass>
+                    <commandlineArgs></commandlineArgs>
+                    <arguments></arguments>
+                    <cleanupDaemonThreads>false</cleanupDaemonThreads>
+                    <systemProperties>
+                        <systemProperty>
+                            <key>java.awt.headless</key>
+                            <value>false</value>
+                        </systemProperty>
+                    </systemProperties>
+                    <vmArgs>${exec.vmArgs}</vmArgs>
+                </configuration>
+            </plugin>
+
+        </plugins>
+    </build>
+
 </project>

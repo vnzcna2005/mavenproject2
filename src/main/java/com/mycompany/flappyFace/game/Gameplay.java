@@ -28,8 +28,7 @@ public class Gameplay extends javax.swing.JFrame {
     private static final long serialVersionUID = 1L;
     private static final int WINDOW_WIDTH = 1000;
     private static final int WINDOW_HEIGHT = 700;
-   
-    
+
     private class GamePanel extends JPanel {
 
         private static final long serialVersionUID = 1L;
@@ -57,7 +56,9 @@ public class Gameplay extends javax.swing.JFrame {
         private int score = 0;
         private int bestScore = 0;
 
-        public GamePanel() {
+        private Image playerImage;
+
+        public GamePanel(String characterImagePath) {
 
             java.net.URL bgUrl = getClass().getResource("/images/game_bg.png");
             if (bgUrl == null) {
@@ -72,22 +73,30 @@ public class Gameplay extends javax.swing.JFrame {
 
             try {
 
-                BufferedImage bufFace = ImageIO.read(getClass().getResourceAsStream("/images/Face.png"));
+                BufferedImage bufFace = ImageIO.read(getClass().getResourceAsStream(characterImagePath));
                 if (bufFace != null) {
-                    faceImage = bufFace;
+
+                    playerImage = bufFace;
                 } else {
-                    logger.warning("Face.png not found or unreadable");
+                    logger.warning("Custom character image not found or unreadable at path: " + characterImagePath);
+
+                    playerImage = ImageIO.read(getClass().getResourceAsStream("/images/Face.png"));
                 }
             } catch (IOException ex) {
-                logger.log(Level.WARNING, "Error loading Face.png", ex);
+                logger.log(java.util.logging.Level.SEVERE, "Error loading player image from path: " + characterImagePath, ex);
+
+                try {
+                    playerImage = ImageIO.read(getClass().getResourceAsStream("/images/Face.png"));
+                } catch (IOException e) {
+                    logger.log(java.util.logging.Level.SEVERE, "Error loading fallback image.", e);
+                }
             }
 
-            //top-facing pipe
             try {
                 BufferedImage buf = ImageIO.read(getClass().getResourceAsStream("/images/pipes.png"));
                 if (buf != null) {
                     pipeImage = buf;
-                    // create flipped (vertical) version for bottom pipe
+
                     AffineTransform tx = AffineTransform.getScaleInstance(1, -1);
                     tx.translate(0, -buf.getHeight());
                     AffineTransformOp op = new AffineTransformOp(tx, AffineTransformOp.TYPE_NEAREST_NEIGHBOR);
@@ -109,10 +118,10 @@ public class Gameplay extends javax.swing.JFrame {
 
             pipes.clear();
 
-            // Initialize the flappy face
-            int faceStartX = WINDOW_WIDTH / 4; // Roughly left-center
-            int faceStartY = (WINDOW_HEIGHT - FACE_HEIGHT) / 2; // Vertically centered
-            flappyFace = new Face(faceStartX, faceStartY, FACE_WIDTH, FACE_HEIGHT, faceImage);
+            int faceStartX = WINDOW_WIDTH / 4;
+            int faceStartY = (WINDOW_HEIGHT - FACE_HEIGHT) / 2;
+
+            flappyFace = new Face(faceStartX, faceStartY, FACE_WIDTH, FACE_HEIGHT, playerImage);
 
             int firstX = WINDOW_WIDTH / 2;
             for (int i = 0; i < PIPE_COUNT; i++) {
@@ -127,37 +136,31 @@ public class Gameplay extends javax.swing.JFrame {
 
             }
 
-            // Timer but don't move until click          
             timer = new javax.swing.Timer(10, e -> {
                 if (gameOver) {
-                    //stop the timer and don't update anything
+
                     timer.stop();
                     repaint();
-                    return; // Exit the update loop
+                    return;
                 }
 
-                // update pipe positions
                 Iterator<Pipe> it = pipes.iterator();
                 while (it.hasNext()) {
                     Pipe p = it.next();
                     p.update();
 
-                    // --- SCORE CHECK (NEW) ---                  
                     if (!p.isPassed() && p.getX() < flappyFace.getX() && started) {
                         score++;
                         p.setPassed(true);
                     }
 
-                    // --- COLLISION CHECK (EXISTING) ---
-                    // 1. Get the face's bounding box
                     Rectangle faceBounds = flappyFace.getBounds();
 
-                    // 2. Check collision with top and bottom pipes
                     for (Rectangle pipeBox : p.getBoundsList(getHeight())) {
                         if (faceBounds.intersects(pipeBox)) {
-                            // COLLISION DETECTED!
+
                             gameOver = true;
-                            // Update best score when game is over
+
                             if (score > bestScore) {
                                 bestScore = score;
 
@@ -167,19 +170,17 @@ public class Gameplay extends javax.swing.JFrame {
                     }
                 }
 
-                // Check collision with ground/ceiling
                 int groundY = getHeight();
                 if (flappyFace.getY() + flappyFace.getHeight() >= groundY || flappyFace.getY() <= 0) { // Added ceiling check here too
                     if (!gameOver) {
                         gameOver = true;
                         if (score > bestScore) {
                             bestScore = score;
-                            // prefs.putInt(BEST_SCORE_KEY, bestScore); // If using Preferences
+
                         }
                     }
                 }
 
-                // Update face position only if game is started and NOT over
                 if (started && !gameOver) {
                     flappyFace.update();
                 }
@@ -188,7 +189,7 @@ public class Gameplay extends javax.swing.JFrame {
             });
 
             timer.setRepeats(true);
-            // Start movement only when user clicks             
+
             addMouseListener(new MouseAdapter() {
                 @Override
                 public void mousePressed(MouseEvent e) {
@@ -213,12 +214,12 @@ public class Gameplay extends javax.swing.JFrame {
             });
 
         }
+//eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee
 
         @Override
         protected void paintComponent(Graphics g) {
             super.paintComponent(g);
 
-            // draw background
             if (bgImage != null) {
                 g.drawImage(bgImage, 0, 0, getWidth(), getHeight(), this);
             } else {
@@ -226,55 +227,45 @@ public class Gameplay extends javax.swing.JFrame {
                 g.fillRect(0, 0, getWidth(), getHeight());
             }
 
-            // draw pipes
             for (Pipe p : pipes) {
                 p.draw(g, getHeight());
             }
 
             flappyFace.draw(g);
 
-            // DRAW SCORE 
             g.setColor(Color.WHITE);
             g.setFont(new Font("Arial", Font.BOLD, 60));
             String scoreStr = String.valueOf(score);
             int strW_score = g.getFontMetrics().stringWidth(scoreStr);
             g.drawString(scoreStr, (getWidth() - strW_score) / 2, 70);
 
-            // DRAW BEST SCORE 
-            // ------------------------------------------
-            g.setFont(new Font("Arial", Font.BOLD, 24)); // Smaller font for indicator
+            g.setFont(new Font("Arial", Font.BOLD, 24));
             String bestStr = "BEST SCORE: " + bestScore;
             int bestStrW = g.getFontMetrics().stringWidth(bestStr);
 
-           // Position: Near the right edge (getWidth() - margin) and high up (e.g., 40)
             int margin = 20;
             g.drawString(bestStr, getWidth() - bestStrW - margin, 40);
 
-            // DRAW START INSTRUCTION (New/Modified)
             if (!started && !gameOver) {
                 g.setColor(Color.WHITE);
-                g.setFont(new Font("Arial", Font.BOLD, 40)); // Use a slightly larger font
-                String s = "TAP TO START"; // Clearer instruction
+                g.setFont(new Font("Arial", Font.BOLD, 40));
+                String s = "TAP TO START";
                 int strW = g.getFontMetrics().stringWidth(s);
 
-                // Position the instruction slightly above the vertical center
                 g.drawString(s, (getWidth() - strW) / 2, getHeight() / 2 - 200);
             }
 
-            // --- ADD GAME OVER MESSAGE ---
             if (gameOver) {
-                // Draw translucent background for score card
-                g.setColor(new Color(0, 0, 0, 150)); // Black, 150 opacity
+
+                g.setColor(new Color(0, 0, 0, 150));
                 g.fillRect(0, 0, getWidth(), getHeight());
 
-                // Game Over Text
                 g.setColor(Color.WHITE);
                 g.setFont(new Font("Arial", Font.BOLD, 72));
                 String go = "GAME OVER";
                 int goW = g.getFontMetrics().stringWidth(go);
                 g.drawString(go, (getWidth() - goW) / 2, getHeight() / 2 - 150);
 
-                // Score Card Box
                 g.setColor(new Color(255, 255, 255, 200));
                 int boxW = 400;
                 int boxH = 150;
@@ -285,17 +276,14 @@ public class Gameplay extends javax.swing.JFrame {
                 g.setColor(Color.BLACK);
                 g.setFont(new Font("Arial", Font.BOLD, 30));
 
-                // Current Score
                 String currentStr = "Score: " + score;
                 int currentW = g.getFontMetrics().stringWidth(currentStr);
                 g.drawString(currentStr, (getWidth() - currentW) / 2, boxY + 50);
 
-                // Best Score
                 bestStr = "Best: " + bestScore;
                 int bestW = g.getFontMetrics().stringWidth(bestStr);
                 g.drawString(bestStr, (getWidth() - bestW) / 2, boxY + 110);
 
-                // Restart Instruction
                 g.setColor(Color.YELLOW);
                 g.setFont(new Font("Arial", Font.ITALIC, 20));
                 String r = "Tap twice to restart";
@@ -308,12 +296,11 @@ public class Gameplay extends javax.swing.JFrame {
         }
 
         private void restartGame() {
-            // 1. Reset Game State
+
             started = false;
             gameOver = false;
             score = 0;
 
-            // 2. Reset Pipes
             pipes.clear();
             int firstX = WINDOW_WIDTH / 2;
             for (int i = 0; i < PIPE_COUNT; i++) {
@@ -323,13 +310,11 @@ public class Gameplay extends javax.swing.JFrame {
                 int maxGapY = WINDOW_HEIGHT - PIPE_GAP - margin;
                 int gapY = minGapY + (int) (Math.random() * Math.max(1, maxGapY - minGapY));
 
-                // Reset pipes with speed 0 and passed=false
                 Pipe newPipe = new Pipe(x, PIPE_WIDTH, gapY, PIPE_GAP, 0, pipeImage, flippedPipeImage);
                 newPipe.setPassed(false);
                 pipes.add(newPipe);
             }
 
-            // 3. Reset Face position
             int faceStartX = WINDOW_WIDTH / 4;
             int faceStartY = (WINDOW_HEIGHT - FACE_HEIGHT) / 2;
             flappyFace.setPosition(faceStartX, faceStartY);
@@ -338,21 +323,63 @@ public class Gameplay extends javax.swing.JFrame {
             repaint();
 
         }
+
+    }
+
+    public void fadeIn() {
+
+        setOpacity(0f);
+
+        Timer timer = new Timer(20, null);
+        final float[] opacity = {0f};
+
+        timer.addActionListener(e -> {
+            opacity[0] += 0.05f;
+            if (opacity[0] >= 1f) {
+                opacity[0] = 1f;
+                setOpacity(1f);
+                timer.stop();
+            } else {
+                setOpacity(opacity[0]);
+            }
+        });
+        timer.start();
     }
 
     /**
      * Creates new form Gameplay
      */
-    public Gameplay() {
+    public Gameplay(String characterImagePath) {
 
-        initComponents();
+        setUndecorated(true);
 
-        GamePanel gamePanel = new GamePanel();
+        GamePanel gamePanel = new GamePanel(characterImagePath);
         setContentPane(gamePanel);
 
         setResizable(false);
         setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
 
+        pack();
+        setLocationRelativeTo(null);
+
+        setVisible(true);
+
+        fadeIn();
+    }
+
+    public Gameplay() {
+        initComponents();
+        try {
+            setUndecorated(true);
+
+        } catch (Exception e) {
+            logger.warning("Opacity settings might not be fully supported on this OS/Java version.");
+        }
+
+        GamePanel gamePanel = new GamePanel("/images/Face.png");
+        setContentPane(gamePanel);
+        setResizable(false);
+        setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
         pack();
         setLocationRelativeTo(null);
     }
