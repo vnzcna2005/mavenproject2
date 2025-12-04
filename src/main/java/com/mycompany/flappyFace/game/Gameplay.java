@@ -11,27 +11,32 @@ package com.mycompany.flappyFace.game;
 // Imported the Necessary Java Libraries that needed
 import javax.swing.*;
 import java.awt.*;
-import java.util.logging.Level;
-import java.awt.image.BufferedImage;
-import javax.imageio.ImageIO;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
-import java.awt.image.AffineTransformOp;
+import java.awt.image.BufferedImage;
+import javax.imageio.ImageIO;
 import java.awt.geom.AffineTransform;
+import java.awt.image.AffineTransformOp;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.logging.Level;
 
-//Creates the Main Window and extends JFrame
+/**
+ *
+ * @author RALPHYY
+ */
 public class Gameplay extends javax.swing.JFrame {
-    
+
     private static final java.util.logging.Logger logger = java.util.logging.Logger.getLogger(Gameplay.class.getName());
     private static final long serialVersionUID = 1L;
     private static final int WINDOW_WIDTH = 1000;
     private static final int WINDOW_HEIGHT = 700;
-//Where the actual game happens
+
+    // Where the actual game happens
     private class GamePanel extends JPanel {
+
         private final SoundPlayer soundPlayer = new SoundPlayer();
         private static final long serialVersionUID = 1L;
 
@@ -61,7 +66,11 @@ public class Gameplay extends javax.swing.JFrame {
         private int bestScore = 0;
 
         private Image playerImage;
+        // INSTANCE fields for start position (important — was left default 0 earlier)
+        private int faceStartX;
+        private int faceStartY;
 
+       
         public GamePanel(String characterImagePath) {
 
             java.net.URL bgUrl = getClass().getResource("/images/game_bg.png");
@@ -122,12 +131,17 @@ public class Gameplay extends javax.swing.JFrame {
 
             pipes.clear();
 
-            int faceStartX = WINDOW_WIDTH / 4;
-            int faceStartY = (WINDOW_HEIGHT - FACE_HEIGHT) / 2;
 
-            flappyFace = new Face(faceStartX, faceStartY, FACE_WIDTH, FACE_HEIGHT, playerImage);
+           // ---- FIX: assign to INSTANCE fields instead of creating local vars ----
+            this.faceStartX = WINDOW_WIDTH / 4;
+            this.faceStartY = (WINDOW_HEIGHT - FACE_HEIGHT) / 2;
+
+            // create the face using the instance start coords
+            flappyFace = new Face(this.faceStartX, this.faceStartY, FACE_WIDTH, FACE_HEIGHT, playerImage);
+            // --------------------------------------------------------------------
 
             int firstX = WINDOW_WIDTH / 2;
+
             for (int i = 0; i < PIPE_COUNT; i++) {
 
                 int x = firstX + (i * PIPE_SPACING);
@@ -139,41 +153,88 @@ public class Gameplay extends javax.swing.JFrame {
                 pipes.add(new Pipe(x, PIPE_WIDTH, gapY, PIPE_GAP, 0, pipeImage, flippedPipeImage));
 
             }
-            
+           // --- NEW BUTTON INITIALIZATION AND PLACEMENT ---
+            pauseButton = new JButton("PAUSE");
+            exitButton = new JButton("HOME");
+
+            // Set button properties
+            pauseButton.setFont(new Font("Arial", Font.BOLD, 18));
+            exitButton.setFont(new Font("Arial", Font.BOLD, 18));
+            pauseButton.setBackground(new Color(255, 255, 255, 150));
+            exitButton.setBackground(new Color(255, 0, 0, 150));
+            exitButton.setForeground(Color.WHITE);
+
+            // Use null layout for the panel so we can place buttons manually
+            setLayout(null);
+
+            // Define button locations
+            int buttonWidth = 100;
+            int buttonHeight = 40;
+            int margin = 10;
+
+            // PAUSE BUTTON: TOP LEFT CORNER
+            pauseButton.setBounds(margin, margin, buttonWidth, buttonHeight);
+
+            // EXIT BUTTON: TOP RIGHT CORNER (You can remove this if you only want PAUSE)
+            exitButton.setBounds(WINDOW_WIDTH - buttonWidth - margin, margin, buttonWidth, buttonHeight);
+
+            add(pauseButton);
+            add(exitButton);
+
+            // Ensure buttons are initially hidden
+            pauseButton.setVisible(false);
+            exitButton.setVisible(false);
+
+            // --- BUTTON LISTENERS ---
+            pauseButton.addActionListener(e -> {
+                paused = !paused;
+                if (paused) {
+                    timer.stop();
+                    pauseButton.setText("RESUME");
+                } else {
+                    timer.start();
+                    pauseButton.setText("PAUSE");
+                }
+            });
+
+            exitButton.addActionListener(e -> {
+                System.exit(0);
+            });
 
             timer = new javax.swing.Timer(10, e -> {
-                
-                // --- GAME OVER ANIMATION LOGIC (Bounce and Roll) ---
+
+                // --- PAUSE CHECK (must always be on top) ---
+                if (paused) {
+                    repaint();
+                    return; // Stops movement while paused
+                }
+
+                // --- GAME OVER ANIMATION LOGIC ---
                 if (gameOver) {
-                    // Update the face's falling motion (gravity applied)
-                    flappyFace.update(); 
-                    
-                    // Continue the roll (increase angle) only while the face is visible
+
+                    // Update falling motion
+                    flappyFace.update();
+
+                    // Continue rotating while visible
                     if (flappyFace.getY() < getHeight() + flappyFace.getHeight()) {
-                        double newAngle = flappyFace.getRotationAngle() + 0.5; // Rotation speed
-                        flappyFace.setRotationAngle(newAngle);
-                    }
-                    
-                    // Stop the timer once the face has fallen completely off-screen
-                    if (flappyFace.getY() > getHeight() + flappyFace.getHeight()) {
+                        flappyFace.setRotationAngle(flappyFace.getRotationAngle() + 0.5);
+                    } else {
                         timer.stop();
                     }
 
                     repaint();
-                    return; // Skip all normal game logic below when animating the game over state
+                    return; // Skip normal game loop when game over
                 }
                 // --- END GAME OVER ANIMATION LOGIC ---
-                
-                
-                // --- NORMAL GAME LOOP LOGIC ---
 
+                // --- NORMAL GAME LOOP LOGIC ---
                 Iterator<Pipe> it = pipes.iterator();
                 while (it.hasNext()) {
                     Pipe p = it.next();
-                    
-                    // Pipes only move if the game is started and NOT over
+
+                    // Pipes only move if started
                     if (started && !gameOver) {
-                        p.update(); 
+                        p.update();
                     }
 
                     if (!p.isPassed() && p.getX() < flappyFace.getX() && started) {
@@ -186,19 +247,20 @@ public class Gameplay extends javax.swing.JFrame {
                     // Pipe Collision Check
                     for (Rectangle pipeBox : p.getBoundsList(getHeight())) {
                         if (faceBounds.intersects(pipeBox)) {
-                            
-                            if (!gameOver) { // Only execute collision logic once
+
+                            if (!gameOver) {
                                 gameOver = true;
-                                
-                                // BOUNCE BACK: Reverse horizontal pipe speed for recoil effect
+
+                                // Recoil pipe speed
                                 for (Pipe activePipe : pipes) {
-                                    activePipe.setSpeed(-PIPE_SPEED * 2); 
+                                    activePipe.setSpeed(-PIPE_SPEED * 2);
                                 }
-                                
-                                // Apply high initial rotation angle for the start of the roll
-                                flappyFace.setRotationAngle(flappyFace.getRotationAngle() + 2.0); 
+
+                                // Start rotation animation
+                                flappyFace.setRotationAngle(flappyFace.getRotationAngle() + 2.0);
+
                                 soundPlayer.playClip("bonk.wav");
-                                
+
                                 if (score > bestScore) {
                                     bestScore = score;
                                 }
@@ -208,24 +270,26 @@ public class Gameplay extends javax.swing.JFrame {
                     }
                 }
 
-                // Ground/Ceiling Collision Check
+                // Ground / Ceiling check
                 int groundY = getHeight();
                 if (flappyFace.getY() + flappyFace.getHeight() >= groundY || flappyFace.getY() <= 0) {
+
                     if (!gameOver) {
                         gameOver = true;
-                        soundPlayer.playClip("bonk.wav"); 
-                        
-                        // Stop pipe movement instantly on floor/ceiling hit
+                        soundPlayer.playClip("bonk.wav");
+
+                        // Stop pipes immediately
                         for (Pipe activePipe : pipes) {
-                            activePipe.setSpeed(0); 
+                            activePipe.setSpeed(0);
                         }
-                        
+
                         if (score > bestScore) {
                             bestScore = score;
                         }
                     }
                 }
 
+                // Update flappy face normal movement
                 if (started && !gameOver) {
                     flappyFace.update();
                 }
@@ -247,6 +311,9 @@ public class Gameplay extends javax.swing.JFrame {
                         timer.start();
                         flappyFace.jump();
                         soundPlayer.playClip("swoosh.wav");
+
+                        pauseButton.setVisible(true);
+                        exitButton.setVisible(true);
                     } else if (gameOver) {
                         // Check for double click to restart
                         if (e.getClickCount() == 2) {
@@ -261,7 +328,18 @@ public class Gameplay extends javax.swing.JFrame {
             });
 
         }
-//eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee
+
+       private void togglePause() {
+            paused = !paused; // Toggle the state
+            if (paused) {
+                timer.stop();
+                pauseButton.setText("RESUME");
+            } else {
+                timer.start();
+                pauseButton.setText("PAUSE");
+            }
+            repaint();
+        }
 
         @Override
         protected void paintComponent(Graphics g) {
@@ -290,9 +368,7 @@ public class Gameplay extends javax.swing.JFrame {
             String bestStr = "BEST SCORE: " + bestScore;
             int bestStrW = g.getFontMetrics().stringWidth(bestStr);
 
-
             // Position: Near the right edge (getWidth() - margin) and high up (e.g., 40)
-
             int margin = 20;
             g.drawString(bestStr, getWidth() - bestStrW - margin, 40);
 
@@ -351,6 +427,11 @@ public class Gameplay extends javax.swing.JFrame {
             gameOver = false;
             score = 0;
 
+            paused = false;
+            pauseButton.setText("PAUSE");
+            pauseButton.setVisible(false);
+            exitButton.setVisible(false);
+
             pipes.clear();
             int firstX = WINDOW_WIDTH / 2;
             for (int i = 0; i < PIPE_COUNT; i++) {
@@ -365,10 +446,10 @@ public class Gameplay extends javax.swing.JFrame {
                 pipes.add(newPipe);
             }
 
-            int faceStartX = WINDOW_WIDTH / 4;
-            int faceStartY = (WINDOW_HEIGHT - FACE_HEIGHT) / 2;
-            flappyFace.setPosition(faceStartX, faceStartY);
+            // Re-create the face at the stored starting coordinates so we wipe any velocity/rotation state
+            flappyFace = new Face(this.faceStartX, this.faceStartY, FACE_WIDTH, FACE_HEIGHT, playerImage);
 
+            // Make sure timer is stopped until player taps to start
             timer.stop();
             repaint();
 
@@ -399,7 +480,7 @@ public class Gameplay extends javax.swing.JFrame {
     /**
      * Creates new form Gameplay
      */
-    public Gameplay(String characterImagePath) {
+     public Gameplay(String characterImagePath) {
 
         setUndecorated(true);
 
@@ -417,7 +498,7 @@ public class Gameplay extends javax.swing.JFrame {
         fadeIn();
     }
 
-    public Gameplay() {
+   public Gameplay() {
         initComponents();
         try {
             setUndecorated(true);
