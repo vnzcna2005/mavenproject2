@@ -39,6 +39,7 @@ public class Gameplay extends javax.swing.JFrame {
 
         private final SoundPlayer soundPlayer = new SoundPlayer();
         private static final long serialVersionUID = 1L;
+        private BackgroundMusic bgMusic;
 
         private JButton pauseButton;
         private JButton exitButton;
@@ -70,8 +71,11 @@ public class Gameplay extends javax.swing.JFrame {
         private int faceStartX;
         private int faceStartY;
 
-       
         public GamePanel(String characterImagePath) {
+
+            bgMusic = new BackgroundMusic();
+            bgMusic.loadMusic("gamemusic.wav");
+            bgMusic.playLoop();
 
             java.net.URL bgUrl = getClass().getResource("/images/game_bg.png");
             if (bgUrl == null) {
@@ -131,8 +135,7 @@ public class Gameplay extends javax.swing.JFrame {
 
             pipes.clear();
 
-
-           // ---- FIX: assign to INSTANCE fields instead of creating local vars ----
+            // ---- FIX: assign to INSTANCE fields instead of creating local vars ----
             this.faceStartX = WINDOW_WIDTH / 4;
             this.faceStartY = (WINDOW_HEIGHT - FACE_HEIGHT) / 2;
 
@@ -153,7 +156,7 @@ public class Gameplay extends javax.swing.JFrame {
                 pipes.add(new Pipe(x, PIPE_WIDTH, gapY, PIPE_GAP, 0, pipeImage, flippedPipeImage));
 
             }
-           // --- NEW BUTTON INITIALIZATION AND PLACEMENT ---
+            // --- NEW BUTTON INITIALIZATION AND PLACEMENT ---
             pauseButton = new JButton("PAUSE");
             exitButton = new JButton("EXIT");
 
@@ -176,7 +179,7 @@ public class Gameplay extends javax.swing.JFrame {
             pauseButton.setBounds(margin, margin, buttonWidth, buttonHeight);
 
             // EXIT BUTTON: TOP RIGHT CORNER (You can remove this if you only want PAUSE)
-           exitButton.setBounds(margin + buttonWidth + 10, margin, buttonWidth, buttonHeight);
+            exitButton.setBounds(margin + buttonWidth + 10, margin, buttonWidth, buttonHeight);
 
             add(pauseButton);
             add(exitButton);
@@ -194,14 +197,16 @@ public class Gameplay extends javax.swing.JFrame {
                 } else {
                     timer.start();
                     pauseButton.setText("PAUSE");
+                    bgMusic.stop();
                 }
             });
 
             exitButton.addActionListener(e -> {
                 System.exit(0);
+                bgMusic.stop();
             });
 
-            timer = new javax.swing.Timer(10, e -> {
+            timer = new javax.swing.Timer(1, e -> {
 
                 // --- PAUSE CHECK (must always be on top) ---
                 if (paused) {
@@ -329,7 +334,7 @@ public class Gameplay extends javax.swing.JFrame {
 
         }
 
-       private void togglePause() {
+        private void togglePause() {
             paused = !paused; // Toggle the state
             if (paused) {
                 timer.stop();
@@ -426,7 +431,7 @@ public class Gameplay extends javax.swing.JFrame {
             started = false;
             gameOver = false;
             score = 0;
-
+            bgMusic.restart();
             paused = false;
             pauseButton.setText("PAUSE");
             pauseButton.setVisible(false);
@@ -480,7 +485,7 @@ public class Gameplay extends javax.swing.JFrame {
     /**
      * Creates new form Gameplay
      */
-     public Gameplay(String characterImagePath) {
+    public Gameplay(String characterImagePath) {
 
         setUndecorated(true);
 
@@ -498,7 +503,7 @@ public class Gameplay extends javax.swing.JFrame {
         fadeIn();
     }
 
-   public Gameplay() {
+    public Gameplay() {
         initComponents();
         try {
             setUndecorated(true);
