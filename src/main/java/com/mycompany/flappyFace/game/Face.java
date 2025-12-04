@@ -5,6 +5,7 @@
 package com.mycompany.flappyFace.game;
 
 import java.awt.Graphics;
+import java.awt.Graphics2D; // Needed for rotation
 import java.awt.Image;
 import java.awt.Rectangle;
 import java.awt.event.KeyEvent; 
@@ -15,6 +16,9 @@ import java.util.logging.Logger;
 public class Face {
     private static final Logger logger = Logger.getLogger(Face.class.getName());
 
+    // 1. ADDED: Rotation Angle variable (in radians)
+    private double rotationAngle = 0; 
+    
     private int x, y; // Position of the face
     private int width, height; // Size of the face
     private Image faceImage; 
@@ -42,7 +46,6 @@ public class Face {
             y = 0;
             velocityY = 0; // Stop vertical movement if hitting the top
         }
-      
     }
 
     public void jump() {
@@ -50,9 +53,23 @@ public class Face {
         isJumping = true; // Mark as jumping
     }
 
+    // 2. UPDATED: Draw method to apply rotation
     public void draw(Graphics g) {
         if (faceImage != null) {
-            g.drawImage(faceImage, x, y, width, height, null);
+            // Must use Graphics2D for transformations
+            Graphics2D g2d = (Graphics2D) g.create(); 
+            
+            // Calculate the center point for rotation
+            int centerX = x + width / 2;
+            int centerY = y + height / 2;
+
+            // Apply the rotation transform around the center of the image
+            g2d.rotate(rotationAngle, centerX, centerY);
+            
+            // Draw the image
+            g2d.drawImage(faceImage, x, y, width, height, null);
+            
+            g2d.dispose(); // Release the graphics context
         } else {           
             logger.warning("Face image not loaded, drawing red rectangle.");
             g.setColor(java.awt.Color.RED);
@@ -66,25 +83,34 @@ public class Face {
     public int getWidth() { return width; }
     public int getHeight() { return height; }
 
+    // 3. ADDED: Getter and Setter for the rotation angle
+    public double getRotationAngle() {
+        return rotationAngle;
+    }
 
-public Rectangle getBounds() {
-    // Define a margin to shrink the hitbox (e.g., 10 pixels on all sides)
-    final int MARGIN = 39;
-    
-    // New X, Y, Width, and Height are calculated with the margin applied
-    int boundsX = x + MARGIN;
-    int boundsY = y + MARGIN;
-    int boundsWidth = width - (2 * MARGIN);
-    int boundsHeight = height - (2 * MARGIN);
-    
-    return new Rectangle(boundsX, boundsY, boundsWidth, boundsHeight);
-}
+    public void setRotationAngle(double angle) {
+        this.rotationAngle = angle;
+    }
+
+    public Rectangle getBounds() {
+        // Define a margin to shrink the hitbox (e.g., 10 pixels on all sides)
+        final int MARGIN = 39;
+        
+        // New X, Y, Width, and Height are calculated with the margin applied
+        int boundsX = x + MARGIN;
+        int boundsY = y + MARGIN;
+        int boundsWidth = width - (2 * MARGIN);
+        int boundsHeight = height - (2 * MARGIN);
+        
+        return new Rectangle(boundsX, boundsY, boundsWidth, boundsHeight);
+    }
 
     // This setter will be important to reset the face's position for restarts later
     public void setPosition(int x, int y) {
         this.x = x;
         this.y = y;
         this.velocityY = 0; // Reset velocity too
+        this.rotationAngle = 0; // <--- RESET ANGLE HERE for new games
     }
 
 }

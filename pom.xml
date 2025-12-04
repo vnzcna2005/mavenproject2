@@ -1,13 +1,63 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 
+                             https://maven.apache.org/xsd/maven-4.0.0.xsd">
+
     <modelVersion>4.0.0</modelVersion>
+
     <groupId>com.mycompany</groupId>
     <artifactId>mavenproject2</artifactId>
     <version>1.0-SNAPSHOT</version>
     <packaging>jar</packaging>
+
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+
+        <!-- Java version -->
         <maven.compiler.release>21</maven.compiler.release>
-       <exec.mainClass>com.mycompany.flappyface.FlappyFaceMain</exec.mainClass>
+
+        <!-- Set your main class here -->
+        <exec.mainClass>com.mycompany.flappyFace.ui.HomeUI</exec.mainClass>
+
+        <!-- JVM memory and runtime settings -->
+        <exec.vmArgs>-Xms128m -Xmx512m --enable-native-access=ALL-UNNAMED</exec.vmArgs>
     </properties>
+
+    <build>
+        <plugins>
+
+            <!-- Maven Compiler Plugin -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.11.0</version>
+                <configuration>
+                    <release>${maven.compiler.release}</release>
+                </configuration>
+            </plugin>
+
+            <!-- Maven Exec Plugin (run your app with mvn exec:java) -->
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>exec-maven-plugin</artifactId>
+                <version>3.1.0</version>
+                <configuration>
+                    <mainClass>${exec.mainClass}</mainClass>
+                    <cleanupDaemonThreads>false</cleanupDaemonThreads>
+
+                    <systemProperties>
+                        <systemProperty>
+                            <key>java.awt.headless</key>
+                            <value>false</value>
+                        </systemProperty>
+                    </systemProperties>
+
+                    <vmArgs>${exec.vmArgs}</vmArgs>
+                </configuration>
+            </plugin>
+
+        </plugins>
+    </build>
+
 </project>
