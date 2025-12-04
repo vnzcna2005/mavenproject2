@@ -155,7 +155,7 @@ public class Gameplay extends javax.swing.JFrame {
             }
            // --- NEW BUTTON INITIALIZATION AND PLACEMENT ---
             pauseButton = new JButton("PAUSE");
-            exitButton = new JButton("HOME");
+            exitButton = new JButton("EXIT");
 
             // Set button properties
             pauseButton.setFont(new Font("Arial", Font.BOLD, 18));
@@ -176,7 +176,7 @@ public class Gameplay extends javax.swing.JFrame {
             pauseButton.setBounds(margin, margin, buttonWidth, buttonHeight);
 
             // EXIT BUTTON: TOP RIGHT CORNER (You can remove this if you only want PAUSE)
-            exitButton.setBounds(WINDOW_WIDTH - buttonWidth - margin, margin, buttonWidth, buttonHeight);
+           exitButton.setBounds(margin + buttonWidth + 10, margin, buttonWidth, buttonHeight);
 
             add(pauseButton);
             add(exitButton);
